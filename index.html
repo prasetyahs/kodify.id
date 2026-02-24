@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maintenance</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
+    }
+
+    .container {
+        max-width: 600px;
+    }
+
+    h1 {
+        font-size: 48px;
+        margin-bottom: 10px;
+    }
+
+    p {
+        font-size: 18px;
+        opacity: 0.9;
+    }
+
+    .countdown {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+
+    .box {
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 12px;
+        min-width: 90px;
+        backdrop-filter: blur(6px);
+    }
+
+    .number {
+        font-size: 36px;
+        font-weight: bold;
+    }
+
+    .label {
+        font-size: 14px;
+        opacity: 0.8;
+    }
+
+    footer {
+        margin-top: 40px;
+        font-size: 14px;
+        opacity: 0.7;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚧 Maintenance</h1>
+    <p>Website sedang dalam perbaikan.<br>
+    Akan kembali online dalam:</p>
+
+    <div class="countdown">
+        <div class="box">
+            <div class="number" id="days">0</div>
+            <div class="label">Hari</div>
+        </div>
+
+        <div class="box">
+            <div class="number" id="hours">0</div>
+            <div class="label">Jam</div>
+        </div>
+
+        <div class="box">
+            <div class="number" id="minutes">0</div>
+            <div class="label">Menit</div>
+        </div>
+
+        <div class="box">
+            <div class="number" id="seconds">0</div>
+            <div class="label">Detik</div>
+        </div>
+    </div>
+
+    <footer>
+        © 2026 — Terima kasih atas kesabaran Anda
+    </footer>
+</div>
+
+<script>
+    // Set waktu target = 30 hari dari sekarang
+    const now = new Date().getTime();
+    const target = now + (30 * 24 * 60 * 60 * 1000);
+
+    const countdown = setInterval(() => {
+        const current = new Date().getTime();
+        const distance = target - current;
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        document.getElementById("days").innerText = days;
+        document.getElementById("hours").innerText = hours;
+        document.getElementById("minutes").innerText = minutes;
+        document.getElementById("seconds").innerText = seconds;
+
+        if (distance < 0) {
+            clearInterval(countdown);
+            document.querySelector(".countdown").innerHTML =
+                "<h2>Website Sudah Online 🎉</h2>";
+        }
+    }, 1000);
+</script>
+
+</body>
+</html>
