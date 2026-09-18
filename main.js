@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1b. Dynamic Navigation Active State (ScrollSpy & Click)
   const navLinks = document.querySelectorAll('.nav-link');
   const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
-  const navIds = ['home', 'about', 'services', 'projects', 'contact'];
+  const navIds = ['home', 'about', 'services', 'projects', 'testimonials', 'contact'];
   const navItems = navIds
     .map(id => ({ id, el: document.getElementById(id) }))
     .filter(item => item.el !== null);
