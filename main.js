@@ -274,134 +274,147 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 7. Testimonials Responsive Autoplay Carousel Slider (Auto-slides every 3.5s)
+  // 7. Testimonials True Seamless Infinite Carousel Slider
   const testiTrack = document.getElementById('testi-slider-track');
   const testiWrapper = document.getElementById('testi-wrapper');
   const testiPrev = document.getElementById('testi-prev');
   const testiNext = document.getElementById('testi-next');
-  const testiDotsContainer = document.getElementById('testi-dots');
 
   if (testiTrack && testiWrapper) {
-    let currentTestiSlide = 0;
-    let testiAutoplayTimer = null;
-    const totalTestiItems = 6;
+    const originalTestiItems = Array.from(testiTrack.children);
+    const totalOriginalTesti = originalTestiItems.length;
 
-    function getTestiCardsPerSlide() {
-      if (window.innerWidth >= 1024) return 3;
-      if (window.innerWidth >= 768) return 2;
-      return 1;
-    }
+    if (totalOriginalTesti > 0) {
+      // 1. Clone items to both ends to achieve seamless bidirectional infinite looping
+      originalTestiItems.forEach(item => {
+        const clone = item.cloneNode(true);
+        clone.classList.add('testi-clone');
+        testiTrack.appendChild(clone);
+      });
 
-    function getTotalTestiSlides() {
-      const perSlide = getTestiCardsPerSlide();
-      return Math.ceil(totalTestiItems / perSlide);
-    }
+      [...originalTestiItems].reverse().forEach(item => {
+        const clone = item.cloneNode(true);
+        clone.classList.add('testi-clone');
+        testiTrack.insertBefore(clone, testiTrack.firstChild);
+      });
 
-    function renderTestiDots() {
-      if (!testiDotsContainer) return;
-      const totalSlides = getTotalTestiSlides();
-      testiDotsContainer.innerHTML = '';
-      for (let i = 0; i < totalSlides; i++) {
-        const dot = document.createElement('button');
-        dot.className = `h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-          i === currentTestiSlide ? 'bg-white w-7' : 'bg-white/40 hover:bg-white/70 w-2.5'
-        }`;
-        dot.setAttribute('data-slide', i);
-        dot.setAttribute('aria-label', `Go to Testimonial Slide ${i + 1}`);
-        dot.addEventListener('click', () => {
-          updateTestiSlide(i);
-          resetTestiAutoplay();
-        });
-        testiDotsContainer.appendChild(dot);
+      // Start at the first original item (index = totalOriginalTesti)
+      let currentTestiIndex = totalOriginalTesti;
+      let isTestiTransitioning = false;
+      let testiAutoplayTimer = null;
+
+      function getTestiItemWidth() {
+        const firstItem = testiTrack.children[0];
+        return firstItem ? firstItem.getBoundingClientRect().width : (testiWrapper.clientWidth / 3);
       }
-    }
 
-    function updateTestiSlide(index) {
-      const totalSlides = getTotalTestiSlides();
-      currentTestiSlide = (index + totalSlides) % totalSlides;
-      const shiftX = currentTestiSlide * testiWrapper.clientWidth;
-      testiTrack.style.transform = `translateX(-${shiftX}px)`;
+      function setTestiPosition(animate = true) {
+        const itemWidth = getTestiItemWidth();
+        if (animate) {
+          testiTrack.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)';
+        } else {
+          testiTrack.style.transition = 'none';
+        }
+        testiTrack.style.transform = `translateX(-${currentTestiIndex * itemWidth}px)`;
+      }
 
-      if (testiDotsContainer) {
-        const dots = testiDotsContainer.children;
-        for (let i = 0; i < dots.length; i++) {
-          if (i === currentTestiSlide) {
-            dots[i].className = 'h-2.5 rounded-full transition-all duration-300 cursor-pointer bg-white w-7';
-          } else {
-            dots[i].className = 'h-2.5 rounded-full transition-all duration-300 cursor-pointer bg-white/40 hover:bg-white/70 w-2.5';
-          }
+      function moveTestiNext() {
+        if (isTestiTransitioning) return;
+        isTestiTransitioning = true;
+        currentTestiIndex++;
+        setTestiPosition(true);
+      }
+
+      function moveTestiPrev() {
+        if (isTestiTransitioning) return;
+        isTestiTransitioning = true;
+        currentTestiIndex--;
+        setTestiPosition(true);
+      }
+
+      // Seamless snap on transition end (zero visual jump)
+      testiTrack.addEventListener('transitionend', () => {
+        isTestiTransitioning = false;
+        // If moved past the original set into end clones
+        if (currentTestiIndex >= totalOriginalTesti * 2) {
+          currentTestiIndex = totalOriginalTesti + (currentTestiIndex % totalOriginalTesti);
+          setTestiPosition(false);
+          void testiTrack.offsetHeight; // force reflow
+        }
+        // If moved backward into start clones
+        else if (currentTestiIndex < totalOriginalTesti) {
+          currentTestiIndex = totalOriginalTesti * 2 - (totalOriginalTesti - currentTestiIndex);
+          setTestiPosition(false);
+          void testiTrack.offsetHeight;
+        }
+      });
+
+      function startTestiAutoplay() {
+        stopTestiAutoplay();
+        testiAutoplayTimer = setInterval(() => {
+          moveTestiNext();
+        }, 3200);
+      }
+
+      function stopTestiAutoplay() {
+        if (testiAutoplayTimer) {
+          clearInterval(testiAutoplayTimer);
+          testiAutoplayTimer = null;
         }
       }
-    }
 
-    function startTestiAutoplay() {
-      stopTestiAutoplay();
-      testiAutoplayTimer = setInterval(() => {
-        updateTestiSlide(currentTestiSlide + 1);
-      }, 3500);
-    }
-
-    function stopTestiAutoplay() {
-      if (testiAutoplayTimer) {
-        clearInterval(testiAutoplayTimer);
-        testiAutoplayTimer = null;
+      function resetTestiAutoplay() {
+        stopTestiAutoplay();
+        startTestiAutoplay();
       }
-    }
 
-    function resetTestiAutoplay() {
-      stopTestiAutoplay();
+      if (testiNext) {
+        testiNext.addEventListener('click', () => {
+          moveTestiNext();
+          resetTestiAutoplay();
+        });
+      }
+
+      if (testiPrev) {
+        testiPrev.addEventListener('click', () => {
+          moveTestiPrev();
+          resetTestiAutoplay();
+        });
+      }
+
+      // Pause on hover
+      testiWrapper.addEventListener('mouseenter', stopTestiAutoplay);
+      testiWrapper.addEventListener('mouseleave', startTestiAutoplay);
+
+      // Touch swipe support for mobile/tablet
+      let touchStartX = 0;
+      let touchEndX = 0;
+
+      testiTrack.addEventListener('touchstart', (e) => {
+        stopTestiAutoplay();
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      testiTrack.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchStartX - touchEndX;
+        if (diff > 40) {
+          moveTestiNext();
+        } else if (diff < -40) {
+          moveTestiPrev();
+        }
+        startTestiAutoplay();
+      }, { passive: true });
+
+      // Handle resize without animation glitch
+      window.addEventListener('resize', () => {
+        setTestiPosition(false);
+      }, { passive: true });
+
+      // Initialize position and start autoplay
+      setTestiPosition(false);
       startTestiAutoplay();
     }
-
-    if (testiNext) {
-      testiNext.addEventListener('click', () => {
-        updateTestiSlide(currentTestiSlide + 1);
-        resetTestiAutoplay();
-      });
-    }
-
-    if (testiPrev) {
-      testiPrev.addEventListener('click', () => {
-        updateTestiSlide(currentTestiSlide - 1);
-        resetTestiAutoplay();
-      });
-    }
-
-    // Pause on hover for easy reading
-    testiWrapper.addEventListener('mouseenter', stopTestiAutoplay);
-    testiWrapper.addEventListener('mouseleave', startTestiAutoplay);
-
-    // Touch swipe support for mobile
-    let touchStartX = 0;
-    let touchEndX = 0;
-    testiTrack.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-      stopTestiAutoplay();
-    }, { passive: true });
-
-    testiTrack.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      if (touchStartX - touchEndX > 40) {
-        updateTestiSlide(currentTestiSlide + 1);
-      } else if (touchEndX - touchStartX > 40) {
-        updateTestiSlide(currentTestiSlide - 1);
-      }
-      startTestiAutoplay();
-    }, { passive: true });
-
-    window.addEventListener('resize', () => {
-      const totalSlides = getTotalTestiSlides();
-      if (currentTestiSlide >= totalSlides) {
-        currentTestiSlide = totalSlides - 1;
-      }
-      renderTestiDots();
-      updateTestiSlide(currentTestiSlide);
-    });
-
-    // Initial setup
-    renderTestiDots();
-    updateTestiSlide(0);
-    startTestiAutoplay();
   }
 
   // 8. Projects True Seamless Infinite Carousel Slider
@@ -550,12 +563,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // 9. Case Study Detail Modal Logic & Data
   const caseStudies = {
     1: {
-      category: 'Mobile Application',
+      category: 'Aplikasi Mobile',
       title: 'Buku Catatan Arisan',
       image: 'assets/buku-arisan.png',
       client: 'Komunitas & UMKM Nusantara',
-      timeline: '6 Weeks',
-      deliverable: 'Mobile App & Management System',
+      timeline: '6 Minggu',
+      deliverable: 'Aplikasi Mobile & Sistem Manajemen',
       bannerGradient: 'from-blue-100 via-indigo-50 to-blue-200',
       overview: 'Aplikasi Buku Catatan Arisan dirancang untuk memudahkan pengurus dan anggota arisan mencatat pembayaran, mengundi pemenang secara transparan, menjadwalkan putaran, hingga membuat laporan keuangan otomatis.',
       challenge: 'Pengelolaan arisan tradisional rawan kesalahan pencatatan manual di buku fisik, keraguan transparansi undian giliran, serta kesulitan pemantauan status pembayaran antar anggota.',
@@ -568,30 +581,30 @@ document.addEventListener('DOMContentLoaded', () => {
       tags: ['Mobile App', 'FinTech', 'Cloud Sync', 'UI/UX Design', 'Payment Tracker']
     },
     2: {
-      category: 'Mobile Game',
+      category: 'Game Mobile 2D',
       title: 'Candy Blast Game',
       image: 'assets/candy-blast.jpg',
       client: 'GameStudio Entertainment',
-      timeline: '10 Weeks',
-      deliverable: '2D Casual Puzzle Mobile Game',
+      timeline: '10 Minggu',
+      deliverable: 'Game Mobile Kasual 2D',
       bannerGradient: 'from-pink-100 via-rose-50 to-amber-100',
       overview: 'Candy Blast adalah game puzzle blok kasual bertema buah dan permen manis dengan grafis memukau, efek kilau menarik, kontrol responsif, dan gameplay yang menyenangkan untuk melatih ketangkasan berpikir.',
       challenge: 'Memastikan game berukuran ringan dengan loading instan tanpa mengorbankan kualitas animasi partikel, kelancaran 60 FPS di berbagai perangkat, serta retensi harian pemain.',
       solution: 'Mengoptimalkan rendering sprite 2D, logika game state modular, dynamic particle emitter yang hemat daya, serta sistem pencapaian skor dan leaderboard yang kompetitif.',
       metrics: [
-        { label: 'Smoothness', value: '60 FPS' },
+        { label: 'Kelancaran', value: '60 FPS' },
         { label: 'Retensi Pemain', value: '+65%' },
         { label: 'Rating Pemain', value: '4.8 ★' }
       ],
       tags: ['Game Development', 'Casual Game', 'Animation', 'UI/UX Game', 'Mobile']
     },
     3: {
-      category: 'Islamic & EdTech App',
+      category: 'Aplikasi Islami & EdTech',
       title: 'Mutqin - Hafalan Quran',
       image: 'assets/mutqin.jpg',
       client: 'Yayasan Tahfidz Digital',
-      timeline: '8 Weeks',
-      deliverable: 'Tahfidz Tracker & Quran Companion',
+      timeline: '8 Minggu',
+      deliverable: 'Aplikasi Tracker Tahfidz & Quran Companion',
       bannerGradient: 'from-emerald-100 via-teal-50 to-emerald-200',
       overview: 'Mutqin adalah aplikasi pendamping santri dan muslim untuk membantu menghafal, membaca, menyetorkan hafalan ke pembimbing, serta menjaga kualitas hafalan Al-Qur\'an secara istiqomah dan teratur.',
       challenge: 'Banyak penghafal kesulitan menjaga ritme istiqomah muraja\'ah harian dan pembimbing kesulitan memantau riwayat setoran serta detail perkembangan hafalan santri.',
@@ -604,63 +617,12 @@ document.addEventListener('DOMContentLoaded', () => {
       tags: ['EdTech', 'Islamic App', 'Progress Tracker', 'Mobile UI', 'Cloud Data']
     },
     4: {
-      category: 'Mobile Application',
-      title: 'FinTech Banking Mobile App',
-      client: 'NovaPay Capital',
-      timeline: '16 Weeks',
-      deliverable: 'iOS & Android App',
-      bannerGradient: 'from-cyan-100 via-blue-50 to-indigo-100',
-      overview: 'High-performance cross-platform financial application delivering biometric authentication, real-time FX conversions, instant remittances, and crypto wallet management in one unified app.',
-      challenge: 'Balancing stringent financial compliance (PCI-DSS, 2FA, biometric signing) with an effortless, consumer-grade user onboarding experience taking under 2 minutes.',
-      solution: 'Engineered a Flutter mobile application featuring real-time WebSocket ledger streams, encrypted local biometrics, and a simplified 3-step KYC verification flow.',
-      metrics: [
-        { label: 'App Store Rating', value: '4.9 ★' },
-        { label: 'Transaction Uptime', value: '99.99%' },
-        { label: 'Active App Users', value: '1.2M+' }
-      ],
-      tags: ['Flutter / Dart', 'Biometrics', 'REST API', 'AWS KMS', 'Firebase']
-    },
-    5: {
-      category: 'E-Commerce & Shopify',
-      title: 'Global E-Commerce Platform',
-      client: 'Veloce Luxury Apparel',
-      timeline: '10 Weeks',
-      deliverable: 'Headless E-Commerce Store',
-      bannerGradient: 'from-emerald-100 via-teal-50 to-blue-100',
-      overview: 'Scalable headless store built for 10M+ annual visitors with ultra-fast checkout, localized multicurrency support, and custom warehouse inventory sync.',
-      challenge: 'The client lost substantial revenue during peak flash drops due to server timeouts and checkout cart abandonment on mobile devices (74% cart abandonment).',
-      solution: 'Re-architected the store using headless Shopify Plus with edge-cached product catalogs, a 1-click Apple Pay & Google Pay checkout flow, and automated tax computation.',
-      metrics: [
-        { label: 'Checkout Conversion', value: '+68%' },
-        { label: 'Page Load Speed', value: '1.1s' },
-        { label: 'Black Friday GMV', value: '$14.2M' }
-      ],
-      tags: ['Shopify Plus API', 'Hydrogen', 'React', 'Tailwind CSS', 'Stripe Payments']
-    },
-    6: {
-      category: 'Product Design & AI',
-      title: 'AI Analytics Dashboard Portal',
-      client: 'Synthetix AI Systems',
-      timeline: '14 Weeks',
-      deliverable: 'Enterprise SaaS Intelligence Platform',
-      bannerGradient: 'from-violet-100 via-indigo-50 to-blue-100',
-      overview: 'Intuitive enterprise SaaS intelligence platform featuring real-time data streaming, automated anomaly detection, and interactive AI-driven predictive insights.',
-      challenge: 'Enterprise decision-makers were overwhelmed by complex tabular reports containing millions of data points, causing low user adoption and lengthy analysis cycles.',
-      solution: 'Designed an interactive card-based widget workspace with drag-and-drop customization, natural-language query filters, and instant automated anomaly highlight cards.',
-      metrics: [
-        { label: 'Time-to-Insight', value: '-85%' },
-        { label: 'Executive Adoption', value: '94%' },
-        { label: 'Query Latency', value: '<50ms' }
-      ],
-      tags: ['React', 'Python FastApi', 'Chart.js', 'WebSockets', 'Tailwind CSS']
-    },
-    7: {
-      category: 'Logistics & Supply Chain',
+      category: 'Logistik & Rantai Pasok',
       title: 'Warehouse Management System (WMS)',
       image: 'assets/warehouse.png',
       client: 'RAY Cargo Logistics',
-      timeline: '12 Weeks',
-      deliverable: 'Web & Mobile Warehouse Management System',
+      timeline: '12 Minggu',
+      deliverable: 'Sistem Pergudangan Web & Mobile (WMS)',
       bannerGradient: 'from-blue-100 via-indigo-50 to-slate-200',
       overview: 'Sistem manajemen pergudangan (Warehouse Management System) cerdas untuk mengelola seluruh siklus operasional logistik, mulai dari penerimaan barang (Inbound), alokasi palet & rak penyimpanan, hingga proses pengiriman kargo (Outbound) dengan pelacakan real-time.',
       challenge: 'Tantangan operasional gudang bertrafik tinggi mencakup pelacakan alur barang masuk/keluar yang kompleks, pemindahan palet antar invoice, serta risiko selisih stok (discrepancy) dalam pencatatan manual.',
@@ -670,7 +632,25 @@ document.addEventListener('DOMContentLoaded', () => {
         { label: 'Efisiensi Inbound', value: '3x' },
         { label: 'Human Error', value: '-85%' }
       ],
-      tags: ['Warehouse System', 'Inbound & Outbound', 'Logistics', 'Pallet Management', 'QR Scan', 'Inventory']
+      tags: ['Warehouse System', 'Inbound & Outbound', 'Logistik', 'Pallet Management', 'QR Scan', 'Inventory']
+    },
+    5: {
+      category: 'HR Tech & Payroll',
+      title: 'KlikSalary - HRIS & Payroll',
+      image: 'assets/kliksalary.jpg',
+      client: 'KlikSalary Enterprise',
+      timeline: '12 Minggu',
+      deliverable: 'Aplikasi HRIS Mobile & Web Dashboard Payroll',
+      bannerGradient: 'from-rose-100 via-red-50 to-amber-100',
+      overview: 'KlikSalary adalah solusi HRIS (Human Resource Information System) terintegrasi untuk mengelola SDM perusahaan secara lebih efisien. Mengotomatiskan absensi clock-in/out berbasis GPS & shift kerja, pengajuan cuti, hingga kalkulasi payroll dan penggajian karyawan yang akurat.',
+      challenge: 'Pencatatan kehadiran manual dan fingerprint fisik rawan kecurangan lokasi, lambatnya rekap bulanan oleh tim HR, serta kompleksitas perhitungan komponen gaji, lembur, tunjangan, dan pajak PPh 21.',
+      solution: 'Membangun aplikasi mobile absensi interaktif dengan validasi geofencing GPS dan foto selfie, pengajuan izin/cuti online berjenjang, serta dashboard HR untuk perhitungan otomatis payroll dan penerbitan e-slip gaji.',
+      metrics: [
+        { label: 'Efisiensi Payroll', value: '5x Lebih Cepat' },
+        { label: 'Akurasi Absensi', value: '99.9%' },
+        { label: 'Waktu Rekap HR', value: '-80%' }
+      ],
+      tags: ['HRIS', 'Payroll System', 'Mobile App', 'Web Dashboard', 'GPS Geofencing', 'Digital Slip Gaji']
     }
   };
 
@@ -813,4 +793,85 @@ document.addEventListener('DOMContentLoaded', () => {
       closeCaseStudyModal();
     }
   });
+
+  // =========================================================================
+  // Contact & Consultation Form Handling
+  // =========================================================================
+  const contactForm = document.getElementById('contact-form');
+  const contactStatus = document.getElementById('contact-form-status');
+  const contactSubmitBtn = document.getElementById('contact-submit-btn');
+  const contactBtnText = document.getElementById('contact-btn-text');
+  const contactBtnIcon = document.getElementById('contact-btn-icon');
+  const contactBtnSpinner = document.getElementById('contact-btn-spinner');
+
+  if (contactForm) {
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const name = (document.getElementById('contact-name')?.value || '').trim();
+      const phone = (document.getElementById('contact-phone')?.value || '').trim();
+      const email = (document.getElementById('contact-email')?.value || '').trim();
+      const service = (document.getElementById('contact-service')?.value || '').trim();
+      const budget = (document.getElementById('contact-budget')?.value || '').trim();
+      const message = (document.getElementById('contact-message')?.value || '').trim();
+
+      if (!name || !phone || !email || !message) {
+        if (contactStatus) {
+          contactStatus.className = 'mb-6 p-4 rounded-2xl text-sm border border-amber-200 bg-amber-50 text-amber-900 block';
+          contactStatus.innerHTML = '⚠️ Mohon lengkapi seluruh field bertanda bintang (*) sebelum mengirim.';
+        }
+        return;
+      }
+
+      // Button loading state
+      if (contactSubmitBtn) contactSubmitBtn.disabled = true;
+      if (contactBtnText) contactBtnText.textContent = 'Mengirim Permintaan...';
+      if (contactBtnIcon) contactBtnIcon.classList.add('hidden');
+      if (contactBtnSpinner) contactBtnSpinner.classList.remove('hidden');
+
+      setTimeout(() => {
+        // WhatsApp template link
+        const waText = encodeURIComponent(
+          `Halo Kodify! Saya ${name} ingin konsultasi proyek:\n` +
+          `• Layanan: ${service}\n` +
+          `• Budget: ${budget}\n` +
+          `• Email: ${email}\n` +
+          `• No. WA: ${phone}\n` +
+          `• Pesan: ${message}`
+        );
+        const waUrl = `https://wa.me/6289506277284?text=${waText}`;
+
+        if (contactStatus) {
+          contactStatus.className = 'mb-6 p-5 rounded-2xl text-sm border border-emerald-200 bg-emerald-50 text-emerald-900 block';
+          contactStatus.innerHTML = `
+            <div class="flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-bold text-emerald-900 text-base mb-1">Permintaan Konsultasi Terkirim!</h4>
+                <p class="text-emerald-800 text-xs sm:text-sm leading-relaxed mb-3">
+                  Terima kasih <strong>${name}</strong>. Tim lead consultant Kodify telah menerima rincian proyek Anda dan akan segera menghubungi Anda.
+                </p>
+                <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-3.5 rounded-xl shadow-sm transition-colors">
+                  <span>Hubungkan via WhatsApp Sekarang</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </a>
+              </div>
+            </div>
+          `;
+        }
+
+        // Reset button state
+        if (contactSubmitBtn) contactSubmitBtn.disabled = false;
+        if (contactBtnText) contactBtnText.textContent = 'Kirim Pesan Konsultasi';
+        if (contactBtnIcon) contactBtnIcon.classList.remove('hidden');
+        if (contactBtnSpinner) contactBtnSpinner.classList.add('hidden');
+
+        // Reset form inputs
+        contactForm.reset();
+      }, 700);
+    });
+  }
 });
+
