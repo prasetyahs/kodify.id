@@ -404,166 +404,204 @@ document.addEventListener('DOMContentLoaded', () => {
     startTestiAutoplay();
   }
 
-  // 8. Projects Responsive Carousel Slider (Desktop: 3 per slide, Tablet: 2, Mobile: 1)
+  // 8. Projects True Seamless Infinite Carousel Slider
   const projectsTrack = document.getElementById('projects-slider-track');
   const projectsWrapper = projectsTrack ? projectsTrack.parentElement : null;
   const projectsPrev = document.getElementById('projects-prev');
   const projectsNext = document.getElementById('projects-next');
-  const projectsDotsContainer = document.getElementById('projects-dots');
 
   if (projectsTrack && projectsWrapper) {
-    let currentSlide = 0;
+    const originalItems = Array.from(projectsTrack.children);
+    const totalOriginal = originalItems.length;
 
-    function getCardsPerSlide() {
-      if (window.innerWidth >= 1024) return 3;
-      if (window.innerWidth >= 768) return 2;
-      return 1;
-    }
-
-    function getTotalSlides() {
-      const perSlide = getCardsPerSlide();
-      return Math.ceil(6 / perSlide);
-    }
-
-    function renderProjectDots() {
-      if (!projectsDotsContainer) return;
-      const totalSlides = getTotalSlides();
-      projectsDotsContainer.innerHTML = '';
-      for (let i = 0; i < totalSlides; i++) {
-        const dot = document.createElement('button');
-        dot.className = `project-dot h-3 rounded-full transition-all duration-300 cursor-pointer ${
-          i === currentSlide ? 'bg-[#6576ff] w-7' : 'bg-slate-200 hover:bg-slate-300 w-3'
-        }`;
-        dot.setAttribute('data-slide', i);
-        dot.setAttribute('aria-label', `Go to Slide ${i + 1}`);
-        dot.addEventListener('click', () => {
-          updateProjectSlide(i);
-        });
-        projectsDotsContainer.appendChild(dot);
-      }
-    }
-
-    function updateProjectSlide(index) {
-      const totalSlides = getTotalSlides();
-      currentSlide = (index + totalSlides) % totalSlides;
-
-      // Translate track smoothly by full viewport width of the slider
-      const shiftX = currentSlide * projectsWrapper.clientWidth;
-      projectsTrack.style.transform = `translateX(-${shiftX}px)`;
-
-      // Update dot styles with smooth capsule expand animation
-      if (projectsDotsContainer) {
-        const dots = projectsDotsContainer.querySelectorAll('.project-dot');
-        dots.forEach((dot, idx) => {
-          if (idx === currentSlide) {
-            dot.classList.add('bg-[#6576ff]', 'w-7');
-            dot.classList.remove('bg-slate-200', 'w-3');
-          } else {
-            dot.classList.remove('bg-[#6576ff]', 'w-7');
-            dot.classList.add('bg-slate-200', 'w-3');
-          }
-        });
-      }
-    }
-
-    if (projectsNext) {
-      projectsNext.addEventListener('click', () => {
-        updateProjectSlide(currentSlide + 1);
+    if (totalOriginal > 0) {
+      // 1. Clone items to both ends to achieve seamless bidirectional infinite looping
+      originalItems.forEach(item => {
+        const clone = item.cloneNode(true);
+        clone.classList.add('project-clone');
+        projectsTrack.appendChild(clone);
       });
-    }
 
-    if (projectsPrev) {
-      projectsPrev.addEventListener('click', () => {
-        updateProjectSlide(currentSlide - 1);
+      [...originalItems].reverse().forEach(item => {
+        const clone = item.cloneNode(true);
+        clone.classList.add('project-clone');
+        projectsTrack.insertBefore(clone, projectsTrack.firstChild);
       });
+
+      // Start at the first original item (index = totalOriginal)
+      let currentIndex = totalOriginal;
+      let isTransitioning = false;
+      let projectsAutoplayTimer = null;
+
+      function getItemWidth() {
+        const firstItem = projectsTrack.children[0];
+        return firstItem ? firstItem.getBoundingClientRect().width : (projectsWrapper.clientWidth / 3);
+      }
+
+      function setPosition(animate = true) {
+        const itemWidth = getItemWidth();
+        if (animate) {
+          projectsTrack.style.transition = 'transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)';
+        } else {
+          projectsTrack.style.transition = 'none';
+        }
+        projectsTrack.style.transform = `translateX(-${currentIndex * itemWidth}px)`;
+      }
+
+      function moveToNext() {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        currentIndex++;
+        setPosition(true);
+      }
+
+      function moveToPrev() {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        currentIndex--;
+        setPosition(true);
+      }
+
+      // Seamless snap on transition end (zero visual jump)
+      projectsTrack.addEventListener('transitionend', () => {
+        isTransitioning = false;
+        // If moved past the original set into end clones
+        if (currentIndex >= totalOriginal * 2) {
+          currentIndex = totalOriginal + (currentIndex % totalOriginal);
+          setPosition(false);
+          void projectsTrack.offsetHeight; // force reflow
+        }
+        // If moved backward into start clones
+        else if (currentIndex < totalOriginal) {
+          currentIndex = totalOriginal * 2 - (totalOriginal - currentIndex);
+          setPosition(false);
+          void projectsTrack.offsetHeight;
+        }
+      });
+
+      function startProjectsAutoplay() {
+        stopProjectsAutoplay();
+        projectsAutoplayTimer = setInterval(() => {
+          moveToNext();
+        }, 3200);
+      }
+
+      function stopProjectsAutoplay() {
+        if (projectsAutoplayTimer) {
+          clearInterval(projectsAutoplayTimer);
+          projectsAutoplayTimer = null;
+        }
+      }
+
+      function resetProjectsAutoplay() {
+        stopProjectsAutoplay();
+        startProjectsAutoplay();
+      }
+
+      if (projectsNext) {
+        projectsNext.addEventListener('click', () => {
+          moveToNext();
+          resetProjectsAutoplay();
+        });
+      }
+
+      if (projectsPrev) {
+        projectsPrev.addEventListener('click', () => {
+          moveToPrev();
+          resetProjectsAutoplay();
+        });
+      }
+
+      // Pause on hover
+      projectsWrapper.addEventListener('mouseenter', stopProjectsAutoplay);
+      projectsWrapper.addEventListener('mouseleave', startProjectsAutoplay);
+
+      // Touch swipe support for mobile/tablet
+      let touchStartX = 0;
+      let touchEndX = 0;
+
+      projectsTrack.addEventListener('touchstart', (e) => {
+        stopProjectsAutoplay();
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      projectsTrack.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchStartX - touchEndX;
+        if (diff > 40) {
+          moveToNext();
+        } else if (diff < -40) {
+          moveToPrev();
+        }
+        startProjectsAutoplay();
+      }, { passive: true });
+
+      // Handle resize without animation glitch
+      window.addEventListener('resize', () => {
+        setPosition(false);
+      }, { passive: true });
+
+      // Initialize position and start autoplay
+      setPosition(false);
+      startProjectsAutoplay();
     }
-
-    // Touch swipe support for mobile/tablet
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    projectsTrack.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    projectsTrack.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      if (touchStartX - touchEndX > 40) {
-        // swipe left -> next slide
-        updateProjectSlide(currentSlide + 1);
-      } else if (touchEndX - touchStartX > 40) {
-        // swipe right -> prev slide
-        updateProjectSlide(currentSlide - 1);
-      }
-    }, { passive: true });
-
-    // Recalculate on screen resize
-    window.addEventListener('resize', () => {
-      const totalSlides = getTotalSlides();
-      if (currentSlide >= totalSlides) {
-        currentSlide = totalSlides - 1;
-      }
-      renderProjectDots();
-      updateProjectSlide(currentSlide);
-    });
-
-    // Initial dot rendering & slider state
-    renderProjectDots();
-    updateProjectSlide(0);
   }
 
   // 9. Case Study Detail Modal Logic & Data
   const caseStudies = {
     1: {
-      category: 'Branding & Identity',
-      title: 'Modern Company Branding Project',
-      client: 'Apex Global Tech',
-      timeline: '8 Weeks',
-      deliverable: 'Brand Identity & Guidelines',
-      bannerGradient: 'from-indigo-100 via-blue-50 to-purple-100',
-      overview: 'Re-envisioning the core identity and digital brand guidelines for a corporate tech leader operating across North America and Europe. We established an authoritative yet approachable persona designed to dominate an enterprise SaaS market.',
-      challenge: 'Fragmented brand assets across 4 international subsidiaries created inconsistent customer touchpoints, lowered trust among institutional buyers, and confused product positioning.',
-      solution: 'Crafted a centralized digital design language featuring our signature periwinkle aesthetic, bespoke geometric iconography, and an interactive token-based component system for all digital and print collateral.',
+      category: 'Mobile Application',
+      title: 'Buku Catatan Arisan',
+      image: 'assets/buku-arisan.png',
+      client: 'Komunitas & UMKM Nusantara',
+      timeline: '6 Weeks',
+      deliverable: 'Mobile App & Management System',
+      bannerGradient: 'from-blue-100 via-indigo-50 to-blue-200',
+      overview: 'Aplikasi Buku Catatan Arisan dirancang untuk memudahkan pengurus dan anggota arisan mencatat pembayaran, mengundi pemenang secara transparan, menjadwalkan putaran, hingga membuat laporan keuangan otomatis.',
+      challenge: 'Pengelolaan arisan tradisional rawan kesalahan pencatatan manual di buku fisik, keraguan transparansi undian giliran, serta kesulitan pemantauan status pembayaran antar anggota.',
+      solution: 'Membangun aplikasi mobile interaktif dengan sistem sinkronisasi cloud real-time, pengundian acak terverifikasi, pelacakan pembayaran visual, dan laporan berkala yang transparan.',
       metrics: [
-        { label: 'Brand Recall', value: '+145%' },
-        { label: 'Inbound Quality', value: '+42%' },
-        { label: 'Consistency', value: '100%' }
+        { label: 'Efisiensi Catat', value: '10x' },
+        { label: 'Transparansi', value: '100%' },
+        { label: 'Kepuasan Anggota', value: '4.9 ★' }
       ],
-      tags: ['Brand Strategy', 'Figma', 'Visual System', 'Adobe Illustrator', 'Design Tokens']
+      tags: ['Mobile App', 'FinTech', 'Cloud Sync', 'UI/UX Design', 'Payment Tracker']
     },
     2: {
-      category: 'Web Platform',
-      title: 'Website Design and Development',
-      client: 'Lumina Cloud Services',
-      timeline: '12 Weeks',
-      deliverable: 'Web Platform & Design System',
-      bannerGradient: 'from-purple-100 via-indigo-50 to-blue-100',
-      overview: 'End-to-end design and modular web platform development delivering seamless user interaction for an enterprise cloud orchestration provider with over 50,000 active server nodes.',
-      challenge: 'Their legacy website suffered from a 68% bounce rate due to slow initial load times (3.4s) and overly technical, non-interactive explanations of complex cloud infrastructure products.',
-      solution: 'Engineered an ultra-fast static web platform featuring interactive architecture diagrams, live ROI calculators, micro-animated product tours, and sub-second page transitions.',
+      category: 'Mobile Game',
+      title: 'Candy Blast Game',
+      image: 'assets/candy-blast.jpg',
+      client: 'GameStudio Entertainment',
+      timeline: '10 Weeks',
+      deliverable: '2D Casual Puzzle Mobile Game',
+      bannerGradient: 'from-pink-100 via-rose-50 to-amber-100',
+      overview: 'Candy Blast adalah game puzzle blok kasual bertema buah dan permen manis dengan grafis memukau, efek kilau menarik, kontrol responsif, dan gameplay yang menyenangkan untuk melatih ketangkasan berpikir.',
+      challenge: 'Memastikan game berukuran ringan dengan loading instan tanpa mengorbankan kualitas animasi partikel, kelancaran 60 FPS di berbagai perangkat, serta retensi harian pemain.',
+      solution: 'Mengoptimalkan rendering sprite 2D, logika game state modular, dynamic particle emitter yang hemat daya, serta sistem pencapaian skor dan leaderboard yang kompetitif.',
       metrics: [
-        { label: 'Lighthouse Score', value: '98/100' },
-        { label: 'Bounce Rate', value: '-54%' },
-        { label: 'Session Duration', value: '+210%' }
+        { label: 'Smoothness', value: '60 FPS' },
+        { label: 'Retensi Pemain', value: '+65%' },
+        { label: 'Rating Pemain', value: '4.8 ★' }
       ],
-      tags: ['Next.js', 'Tailwind CSS', 'TypeScript', 'Framer Motion', 'Vercel Edge']
+      tags: ['Game Development', 'Casual Game', 'Animation', 'UI/UX Game', 'Mobile']
     },
     3: {
-      category: 'Digital Marketing',
-      title: 'Media Marketing Services',
-      client: 'Pulse Health & Fitness',
-      timeline: '6 Months Campaign',
-      deliverable: 'Omnichannel Growth Campaign',
-      bannerGradient: 'from-pink-100 via-purple-50 to-indigo-100',
-      overview: 'Scalable multimedia advertising and omnichannel growth strategy that accelerated paid user acquisition and brand loyalty across mobile and web platforms.',
-      challenge: 'Customer acquisition costs (CAC) were climbing above $120 per user due to saturated paid social channels and generic creative that failed to resonate with target demographics.',
-      solution: 'Produced a bespoke series of high-converting short-form creative assets, optimized lookalike audience funnels, and deployed dynamic personalized landing pages.',
+      category: 'Islamic & EdTech App',
+      title: 'Mutqin - Hafalan Quran',
+      image: 'assets/mutqin.jpg',
+      client: 'Yayasan Tahfidz Digital',
+      timeline: '8 Weeks',
+      deliverable: 'Tahfidz Tracker & Quran Companion',
+      bannerGradient: 'from-emerald-100 via-teal-50 to-emerald-200',
+      overview: 'Mutqin adalah aplikasi pendamping santri dan muslim untuk membantu menghafal, membaca, menyetorkan hafalan ke pembimbing, serta menjaga kualitas hafalan Al-Qur\'an secara istiqomah dan teratur.',
+      challenge: 'Banyak penghafal kesulitan menjaga ritme istiqomah muraja\'ah harian dan pembimbing kesulitan memantau riwayat setoran serta detail perkembangan hafalan santri.',
+      solution: 'Mengembangkan sistem tracking target hafalan per juz/halaman, pencatatan evaluasi setoran terstruktur, indikator streak motivasional harian, dan ringkasan pencapaian yang rapi.',
       metrics: [
-        { label: 'User Growth', value: '+240%' },
-        { label: 'Customer CAC', value: '-46%' },
-        { label: 'Attributed Pipeline', value: '$3.8M' }
+        { label: 'Kepatuhan Muraja\'ah', value: '+85%' },
+        { label: 'Efisiensi Evaluasi', value: '4x' },
+        { label: 'Review Pengguna', value: '4.9 ★' }
       ],
-      tags: ['Meta Ads', 'Google Ads', 'Klaviyo CRM', 'Creative Direction', 'Looker Studio']
+      tags: ['EdTech', 'Islamic App', 'Progress Tracker', 'Mobile UI', 'Cloud Data']
     },
     4: {
       category: 'Mobile Application',
@@ -615,6 +653,24 @@ document.addEventListener('DOMContentLoaded', () => {
         { label: 'Query Latency', value: '<50ms' }
       ],
       tags: ['React', 'Python FastApi', 'Chart.js', 'WebSockets', 'Tailwind CSS']
+    },
+    7: {
+      category: 'Logistics & Supply Chain',
+      title: 'Warehouse Management System (WMS)',
+      image: 'assets/warehouse.png',
+      client: 'RAY Cargo Logistics',
+      timeline: '12 Weeks',
+      deliverable: 'Web & Mobile Warehouse Management System',
+      bannerGradient: 'from-blue-100 via-indigo-50 to-slate-200',
+      overview: 'Sistem manajemen pergudangan (Warehouse Management System) cerdas untuk mengelola seluruh siklus operasional logistik, mulai dari penerimaan barang (Inbound), alokasi palet & rak penyimpanan, hingga proses pengiriman kargo (Outbound) dengan pelacakan real-time.',
+      challenge: 'Tantangan operasional gudang bertrafik tinggi mencakup pelacakan alur barang masuk/keluar yang kompleks, pemindahan palet antar invoice, serta risiko selisih stok (discrepancy) dalam pencatatan manual.',
+      solution: 'Membangun aplikasi web & mobile WMS terintegrasi dengan pemindaian barcode/QR palet instan, alur verifikasi digital Inbound & Outbound, transfer palet antar invoice dinamis, serta laporan mutasi stok otomatis.',
+      metrics: [
+        { label: 'Akurasi Stok', value: '99.8%' },
+        { label: 'Efisiensi Inbound', value: '3x' },
+        { label: 'Human Error', value: '-85%' }
+      ],
+      tags: ['Warehouse System', 'Inbound & Outbound', 'Logistics', 'Pallet Management', 'QR Scan', 'Inventory']
     }
   };
 
@@ -639,6 +695,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const challengeEl = document.getElementById('modal-challenge');
     const solutionEl = document.getElementById('modal-solution');
     const bannerEl = document.getElementById('modal-banner');
+    const bannerImgEl = document.getElementById('modal-banner-img');
+    const bannerOverlayEl = document.getElementById('modal-banner-overlay');
+    const glow1 = document.getElementById('modal-glow-1');
+    const glow2 = document.getElementById('modal-glow-2');
     const metricsEl = document.getElementById('modal-metrics');
     const tagsEl = document.getElementById('modal-tags');
 
@@ -651,8 +711,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (challengeEl) challengeEl.textContent = data.challenge;
     if (solutionEl) solutionEl.textContent = data.solution;
 
+    // Header image display: full fit when image exists, or stylish gradient fallback
     if (bannerEl) {
-      bannerEl.className = `relative w-full h-52 sm:h-60 bg-gradient-to-br ${data.bannerGradient} p-6 sm:p-8 flex flex-col justify-end overflow-hidden`;
+      if (data.image) {
+        if (bannerImgEl) {
+          bannerImgEl.src = data.image;
+          bannerImgEl.alt = data.title;
+          bannerImgEl.classList.remove('hidden');
+        }
+        if (bannerOverlayEl) bannerOverlayEl.classList.remove('hidden');
+        if (glow1) glow1.classList.add('hidden');
+        if (glow2) glow2.classList.add('hidden');
+        bannerEl.className = 'relative w-full h-64 sm:h-72 md:h-80 bg-slate-950 p-6 sm:p-8 flex flex-col justify-end overflow-hidden';
+        if (titleEl) {
+          titleEl.className = 'text-xl sm:text-2xl lg:text-3xl font-extrabold text-white leading-tight';
+        }
+      } else {
+        if (bannerImgEl) {
+          bannerImgEl.src = '';
+          bannerImgEl.classList.add('hidden');
+        }
+        if (bannerOverlayEl) bannerOverlayEl.classList.add('hidden');
+        if (glow1) glow1.classList.remove('hidden');
+        if (glow2) glow2.classList.remove('hidden');
+        bannerEl.className = `relative w-full h-56 sm:h-64 bg-gradient-to-br ${data.bannerGradient} p-6 sm:p-8 flex flex-col justify-end overflow-hidden`;
+        if (titleEl) {
+          titleEl.className = 'text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 leading-tight';
+        }
+      }
     }
 
     if (metricsEl) {
@@ -693,16 +779,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.remove('overflow-hidden');
   }
 
-  // Trigger modal on card click or button click
-  document.querySelectorAll('.project-card, .open-case-study-btn').forEach(el => {
-    el.addEventListener('click', (e) => {
+  // Trigger modal on card click or button click (supports original and cloned infinite slider cards)
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('.project-card, .open-case-study-btn');
+    if (trigger) {
       e.preventDefault();
-      e.stopPropagation();
-      const id = el.getAttribute('data-project-id') || el.closest('[data-project-id]')?.getAttribute('data-project-id');
+      const id = trigger.getAttribute('data-project-id') || trigger.closest('[data-project-id]')?.getAttribute('data-project-id');
       if (id) {
         openCaseStudyModal(id);
       }
-    });
+    }
   });
 
   if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeCaseStudyModal);
