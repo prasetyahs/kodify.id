@@ -48,16 +48,114 @@
       animation: shimmer 2.5s infinite;
     }
 
-    /* Floating Micro-Animation */
-    @keyframes floatSlow {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(-8px); }
+    /* Refined Floating Micro-Animation */
+    @keyframes floatGentle {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(0.4deg); }
     }
-    .animate-float {
-      animation: floatSlow 3.5s ease-in-out infinite alternate;
+    @keyframes floatGentleAlt {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(7px) rotate(-0.4deg); }
     }
-    .animate-float-reverse {
-      animation: floatSlow 3.5s ease-in-out infinite alternate-reverse;
+    .animate-float-gentle {
+      animation: floatGentle 4.8s ease-in-out infinite;
+    }
+    .animate-float-gentle-reverse {
+      animation: floatGentleAlt 5.2s ease-in-out infinite;
+    }
+
+    /* Choreographed Hero Entrance Keyframes */
+    @keyframes heroFadeUp {
+      0% {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes heroScaleIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.94) translateY(24px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    @keyframes heroBadgeSpring {
+      0% {
+        opacity: 0;
+        transform: scale(0.85) translateY(18px);
+      }
+      70% {
+        transform: scale(1.03) translateY(-3px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .hero-enter-kicker {
+      animation: heroFadeUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+    }
+    .hero-enter-title {
+      animation: heroFadeUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+    }
+    .hero-enter-desc {
+      animation: heroFadeUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
+    }
+    .hero-enter-cta {
+      animation: heroFadeUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.40s both;
+    }
+    .hero-enter-visual {
+      animation: heroScaleIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both;
+    }
+    .hero-enter-badge-1 {
+      animation: heroBadgeSpring 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.52s both;
+    }
+    .hero-enter-badge-2 {
+      animation: heroBadgeSpring 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.68s both;
+    }
+
+    /* Hero 3D Parallax Perspective Container */
+    .hero-3d-scene {
+      perspective: 1200px;
+    }
+    .hero-card-3d-target {
+      transform-style: preserve-3d;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+      will-change: transform;
+    }
+    .hero-badge-float {
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+      will-change: transform;
+    }
+    .hero-badge-float:hover {
+      box-shadow: 0 22px 35px -8px rgba(101, 118, 255, 0.22), 0 0 0 1px rgba(101, 118, 255, 0.25) !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-enter-kicker,
+      .hero-enter-title,
+      .hero-enter-desc,
+      .hero-enter-cta,
+      .hero-enter-visual,
+      .hero-enter-badge-1,
+      .hero-enter-badge-2,
+      .animate-float-gentle,
+      .animate-float-gentle-reverse {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .hero-card-3d-target,
+      .hero-badge-float {
+        transform: none !important;
+      }
     }
 
     /* Motion Scroll Reveal Classes */
@@ -394,20 +492,21 @@
       <div class="max-w-7xl mx-auto px-6">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mb-16">
           <!-- Left Hero Content (7 Cols) -->
-          <div class="lg:col-span-7 reveal-on-scroll">
-            <div class="inline-flex items-center gap-2  text-[#6576ff] text-xs md:text-sm font-semibold mb-6">
+          <div class="lg:col-span-7">
+            <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#6576ff]/10 text-[#6576ff] text-xs font-semibold mb-6 border border-[#6576ff]/20 shadow-sm hero-enter-kicker">
+              
               <span>PT Kodify Teknologi Berkarya</span>
             </div>
             
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.14] mb-6">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.14] mb-6 hero-enter-title">
               Rancang Solusi Digital &amp; <br class="hidden sm:inline">Software Andal Bisnis Anda
             </h1>
             
-            <p class="text-slate-600 text-base sm:text-lg leading-relaxed mb-8 max-w-xl">
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed mb-8 max-w-xl hero-enter-desc">
               Software house profesional yang berdedikasi membangun aplikasi mobile, sistem manajemen pergudangan (WMS), web aplikasi enterprise, hingga integrasi AI untuk mengakselerasi skala bisnis Anda.
             </p>
             
-            <div class="flex flex-wrap items-center gap-4">
+            <div class="flex flex-wrap items-center gap-4 hero-enter-cta">
               <a href="https://wa.me/6289506277284?text=Halo%20Kodify,%20saya%20tertarik%20untuk%20konsultasi%20pembuatan%20proyek%20digital" target="_blank" rel="noopener noreferrer" class="btn-hover bg-[#6576ff] hover:bg-[#5262f0] text-white px-8 py-3.5 rounded-full font-semibold inline-flex items-center gap-2.5 shadow-lg shadow-[#6576ff]/35 hover:shadow-xl hover:shadow-[#6576ff]/45 group">
                 <span>Hubungi Kami</span>
                 <svg class="arrow-shift" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -426,10 +525,10 @@
             </div>
           </div>
 
-          <!-- Right Hero Visual (5 Cols) -->
-          <div class="lg:col-span-5 relative flex justify-center reveal-on-scroll">
+          <!-- Right Hero Visual (5 Cols) with 3D Parallax & Motion -->
+          <div class="lg:col-span-5 relative flex justify-center hero-3d-scene">
             <!-- Hero Specialist Photo Frame with Glow & Soft Overlay -->
-            <div class="w-full max-w-[420px] h-[480px] rounded-3xl relative overflow-hidden shadow-2xl shadow-[#6576ff]/25 group">
+            <div id="hero-card-3d" class="w-full max-w-[420px] h-[480px] rounded-3xl relative overflow-hidden shadow-2xl shadow-[#6576ff]/25 group hero-card-3d-target hero-enter-visual">
               <img 
                 src="assets/hero-specialist.jpg" 
                 alt="Tim Profesional Kodify" 
@@ -440,29 +539,30 @@
             </div>
 
             <!-- Floating Badge Top Right -->
-            <div class="absolute -top-3 -right-3 md:-right-6 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl shadow-slate-200/50 border border-white flex items-center gap-3.5 animate-float z-10">
-              <div class="w-11 h-11 rounded-xl bg-[#6576ff]/10 text-[#6576ff] flex items-center justify-center">
+            <div id="hero-badge-1" class="absolute -top-3 -right-3 md:-right-6 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl shadow-slate-200/50 border border-white flex items-center gap-3.5 animate-float-gentle hero-badge-float hero-enter-badge-1 z-10 cursor-default">
+              <div class="w-11 h-11 rounded-xl bg-[#6576ff]/10 text-[#6576ff] flex items-center justify-center shrink-0">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="16 18 22 12 16 6"></polyline>
                   <polyline points="8 6 2 12 8 18"></polyline>
                 </svg>
               </div>
               <div>
-                <h5 class="font-bold text-slate-900 text-sm">Pengembangan Software</h5>
-                <p class="text-xs text-slate-500">500+ Proyek Selesai</p>
+                <h5 class="font-bold text-slate-900 text-sm">Arsitektur Production-Ready</h5>
+                <p class="text-xs text-slate-500">Flutter, Cloud &amp; WMS Enterprise</p>
               </div>
             </div>
 
             <!-- Floating Badge Bottom Left -->
-            <div class="absolute bottom-6 -left-3 md:-left-8 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl shadow-slate-200/50 border border-white flex items-center gap-3.5 animate-float-reverse z-10">
-              <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            <div id="hero-badge-2" class="absolute bottom-6 -left-3 md:-left-8 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl shadow-slate-200/50 border border-white flex items-center gap-3.5 animate-float-gentle-reverse hero-badge-float hero-enter-badge-2 z-10 cursor-default">
+              <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <polyline points="9 12 11 14 15 10"></polyline>
                 </svg>
               </div>
               <div>
-                <h5 class="font-bold text-slate-900 text-sm">Rating 4.9 / 5</h5>
-                <p class="text-xs text-slate-500">15K+ Pengguna Aktif</p>
+                <h5 class="font-bold text-slate-900 text-sm">Standar Kualitas &amp; SLA</h5>
+                <p class="text-xs text-slate-500">Garansi Maintenance &amp; Security</p>
               </div>
             </div>
           </div>
@@ -1383,10 +1483,10 @@
           
           <!-- Left Column: Direct Contact & Information Card (5 cols) -->
           <div class="lg:col-span-5 space-y-6 reveal-on-scroll">
-            <div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-slate-800 relative overflow-hidden">
+            <div class="bg-white text-black rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
 
-              <h3 class="text-2xl font-extrabold mb-3 text-white">Hubungi Kami Langsung</h3>
-              <p class="text-slate-300 text-sm leading-relaxed mb-8">
+              <h3 class="text-2xl font-extrabold mb-3 text-black">Hubungi Kami Langsung</h3>
+              <p class="text-slate-600 text-sm leading-relaxed mb-8">
                 Lebih suka ngobrol langsung tanpa repot isi form? Chat tim konsultan kami melalui WhatsApp untuk respon cepat dalam hitungan menit.
               </p>
 
@@ -1424,7 +1524,7 @@
                   </div>
                   <div>
                     <div class="text-xs text-slate-400 font-medium">Email Resmi</div>
-                    <a href="mailto:dev@kodify.id" class="text-sm font-bold text-white hover:text-[#6576ff] transition-colors">dev@kodify.id</a>
+                    <a href="mailto:dev@kodify.id" class="text-sm font-bold text-black hover:text-[#6576ff] transition-colors">dev@kodify.id</a>
                   </div>
                 </div>
 
@@ -1438,7 +1538,7 @@
                   </div>
                   <div>
                     <div class="text-xs text-slate-400 font-medium">Lokasi Kantor</div>
-                    <div class="text-sm font-semibold text-white">Jatiasih, Jatiluhur, Kota Bekasi, Jawa Barat</div>
+                    <div class="text-sm font-semibold text-black">Jatiasih, Jatiluhur, Kota Bekasi, Jawa Barat</div>
                   </div>
                 </div>
 
@@ -1452,7 +1552,7 @@
                   </div>
                   <div>
                     <div class="text-xs text-slate-400 font-medium">Jam Konsultasi</div>
-                    <div class="text-sm font-semibold text-white">Senin - Jumat (09:00 - 18:00 WIB)</div>
+                    <div class="text-sm font-semibold text-black">Senin - Jumat (09:00 - 18:00 WIB)</div>
                   </div>
                 </div>
               </div>
@@ -1559,7 +1659,7 @@
                   <button 
                     type="submit" 
                     id="contact-submit-btn" 
-                    class="btn-hover w-full sm:w-auto flex-1 bg-[#6576ff] hover:bg-[#5262f0] text-white font-bold py-3.5 px-8 rounded-xl shadow-lg shadow-[#6576ff]/30 hover:shadow-[#6576ff]/50 transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer"
+                    class="btn-hover w-full sm:w-auto flex-1 bg-[#6576ff] hover:bg-[#5262f0] text-white font-bold py-3.5 px-8 rounded-xl shadow-md shadow-[#6576ff]/30 hover:shadow-[#6576ff]/50 transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer"
                   >
                     <span id="contact-btn-text">Kirim Pesan Konsultasi</span>
                     <svg id="contact-btn-icon" class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

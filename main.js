@@ -873,5 +873,78 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 700);
     });
   }
+
+  // =========================================================================
+  // 12. Hero 3D Interactive Parallax & Spatial Motion System
+  // =========================================================================
+  const heroSection = document.getElementById('home');
+  const heroCard = document.getElementById('hero-card-3d');
+  const heroBadge1 = document.getElementById('hero-badge-1');
+  const heroBadge2 = document.getElementById('hero-badge-2');
+
+  const supportsFinePointer = window.matchMedia('(pointer: fine)').matches;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (heroSection && heroCard && supportsFinePointer && !prefersReducedMotion) {
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let isHovering = false;
+    let animFrameId = null;
+
+    function updateParallax() {
+      // Smooth damping / interpolation factor (lerp)
+      currentX += (targetX - currentX) * 0.08;
+      currentY += (targetY - currentY) * 0.08;
+
+      // Subtle 3D Card tilt (max ~4.5 degrees)
+      const tiltX = -currentY * 6;
+      const tiltY = currentX * 6;
+      heroCard.style.transform = `rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) translateZ(8px)`;
+
+      // Multi-plane badge spatial parallax
+      if (heroBadge1) {
+        const b1X = currentX * 16;
+        const b1Y = currentY * 16;
+        heroBadge1.style.transform = `translate3d(${b1X.toFixed(1)}px, ${b1Y.toFixed(1)}px, 28px)`;
+      }
+      if (heroBadge2) {
+        const b2X = -currentX * 14;
+        const b2Y = -currentY * 14;
+        heroBadge2.style.transform = `translate3d(${b2X.toFixed(1)}px, ${b2Y.toFixed(1)}px, 22px)`;
+      }
+
+      // Continue animation loop while hovering or settling back to rest
+      if (isHovering || Math.abs(currentX) > 0.001 || Math.abs(currentY) > 0.001) {
+        animFrameId = requestAnimationFrame(updateParallax);
+      } else {
+        heroCard.style.transform = '';
+        if (heroBadge1) heroBadge1.style.transform = '';
+        if (heroBadge2) heroBadge2.style.transform = '';
+        animFrameId = null;
+      }
+    }
+
+    heroSection.addEventListener('mousemove', (e) => {
+      const rect = heroSection.getBoundingClientRect();
+      // Calculate normalized cursor coordinates (-0.5 to 0.5)
+      targetX = (e.clientX - rect.left) / rect.width - 0.5;
+      targetY = (e.clientY - rect.top) / rect.height - 0.5;
+
+      if (!isHovering) {
+        isHovering = true;
+        if (!animFrameId) {
+          animFrameId = requestAnimationFrame(updateParallax);
+        }
+      }
+    }, { passive: true });
+
+    heroSection.addEventListener('mouseleave', () => {
+      targetX = 0;
+      targetY = 0;
+      isHovering = false;
+    }, { passive: true });
+  }
 });
 
